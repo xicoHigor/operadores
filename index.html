@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard por operador — Loja 01</title>
+<style>
+:root{
+  --bg:#171228; --bg2:#1e1836; --card:#261f42; --card2:#2d2549;
+  --pink:#ff4ecd; --pink2:#ff8ae0; --cyan:#41e6f2; --purple:#8b5cf6;
+  --txt:#f3efff; --mut:#a49bc9; --line:#3d3461; --ok:#3ddc84; --bad:#ff6b6b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:radial-gradient(1200px 600px at 80% -10%,#3b1f63 0%,var(--bg) 55%);color:var(--txt);min-height:100vh;padding:24px}
+.wrap{max-width:1200px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+h1{font-size:22px;font-weight:600}
+h1 span{color:var(--pink)}
+.sub{color:var(--mut);font-size:13px;margin-top:4px}
+.selbox{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.selbox label{font-size:12px;color:var(--mut)}
+select{background:var(--bg2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+button.nav{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:16px}
+button.nav:hover{border-color:var(--pink);color:var(--pink)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.kpi .lbl{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.kpi .val{font-size:28px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .foot{font-size:12px;color:var(--mut);margin-top:4px}
+.pos{color:var(--ok)} .neg{color:var(--bad)} .pnk{color:var(--pink)} .cyn{color:var(--cyan)}
+.row2{display:grid;grid-template-columns:380px 1fr;gap:16px;margin-top:16px}
+.gaugebox{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gaugeval{font-size:34px;font-weight:700;margin-top:-128px;pointer-events:none}
+.gaugelbl{font-size:12px;color:var(--mut);margin-top:6px}
+.legend{display:flex;gap:16px;margin-top:18px;font-size:12px;color:var(--mut);flex-wrap:wrap;justify-content:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 8px;color:var(--mut);font-weight:500;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+th:hover{color:var(--pink)}
+td{padding:10px 8px;border-bottom:1px solid #332a52;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#2c2350}
+tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);border-left:3px solid var(--pink)}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-ok{background:rgba(61,220,132,.15);color:var(--ok)}
+.b-no{background:rgba(255,107,107,.15);color:var(--bad)}
+.b-meio{background:rgba(255,180,80,.15);color:#ffb450}
+.bars{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.brow{display:grid;grid-template-columns:170px 1fr 110px;gap:12px;align-items:center;font-size:12px}
+.bname{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.bname:hover{color:var(--pink)}
+.track{height:16px;background:#1c1633;border-radius:5px;position:relative;overflow:visible}
+.fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--purple),var(--pink));min-width:3px;transition:width .4s ease}
+.goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--cyan)}
+.goallbl{position:absolute;top:-18px;transform:translateX(-50%);font-size:10px;color:var(--cyan);white-space:nowrap}
+.bval{text-align:right;color:var(--txt)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Dashboard <span>por operador</span> — Loja 01</h1>
+    <div class="sub">Período realizado: 01/11 a 08/11/2026 (8 dias) · Meta do mês: R$ 120.000 · 2.031 clientes · Ticket R$ 54,00</div>
+  </div>
+  <div class="selbox">
+    <button class="nav" onclick="step(-1)">&#10094;</button>
+    <select id="sel" onchange="render()"></select>
+    <button class="nav" onclick="step(1)">&#10095;</button>
+  </div>
+</header>
+
+<section class="grid" id="kpis"></section>
+
+<div class="row2">
+  <div class="card gaugebox">
+    <div class="lbl" style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;align-self:flex-start">Meta do mês vs realizado + projeção</div>
+    <svg width="260" height="170" viewBox="0 0 260 170" style="margin-top:12px">
+      <path d="M 30 140 A 100 100 0 0 1 230 140" fill="none" stroke="#1c1633" stroke-width="22" stroke-linecap="round"/>
+      <path id="gReal" d="M 30 140 A 100 100 0 0 1 230 140" fill="none" stroke="url(#lg1)" stroke-width="22" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"/>
+      <path id="gProj" d="M 30 140 A 100 100 0 0 1 230 140" fill="none" stroke="#41e6f2" stroke-width="22" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" opacity=".85"/>
+      <defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ff4ecd"/></linearGradient></defs>
+      <line x1="24" y1="140" x2="236" y2="140" stroke="#3d3461" stroke-width="1"/>
+      <text x="30" y="155" fill="#a49bc9" font-size="10">0</text>
+      <text x="196" y="155" fill="#a49bc9" font-size="10">R$ 120 mil</text>
+    </svg>
+    <div class="gaugeval" id="gv"></div>
+    <div class="gaugelbl" id="gl"></div>
+    <div class="legend">
+      <span><span class="dot" style="background:linear-gradient(90deg,#8b5cf6,#ff4ecd)"></span>Realizado (8d)</span>
+      <span><span class="dot" style="background:#41e6f2"></span>Projeção até 30/11</span>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="lbl" style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em">Projeção de venda (30/11) vs meta — todos os operadores</div>
+    </div>
+    <div class="bars" id="bars"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="lbl" style="font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Ranking completo — clique num operador para detalhar</div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Operador</th><th class="r" onclick="sortT('venda')">Venda líq. ↕</th>
+      <th class="r" onclick="sortT('media')">Média/dia ↕</th><th class="r" onclick="sortT('cupons')">Clientes ↕</th>
+      <th class="r" onclick="sortT('ticket')">Ticket ↕</th><th class="r" onclick="sortT('part')">Part. loja ↕</th>
+      <th class="r" onclick="sortT('proj')">Projeção 30/11 ↕</th><th class="r" onclick="sortT('projpct')">% da meta ↕</th>
+      <th>Status</th>
+    </tr></thead>
+    <tbody id="tb"></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="sub" style="margin-top:14px">Projeção = média diária (venda líq. ÷ 8 dias) × 30 dias. "Ritmo p/ meta" = valor que falta ÷ 22 dias restantes. Se o operador não trabalhou os 8 dias, a média está subestimada.</div>
+</div>
+
+<script>
+const OPS = [{"op": "100935", "nome": "Naiane Costa de Freitas", "venda": 50003.84, "cupons": 813, "ticket": 61.73, "media": 6250.48, "proj": 187514.4, "pace": 41.7, "projpct": 156.3, "gap": 69996.16, "ritmo": 3181.64, "projclientes": 3049.0, "part": 15.8}, {"op": "120003", "nome": "Gilmar Silva Soares", "venda": 48947.37, "cupons": 665, "ticket": 74.39, "media": 6118.42, "proj": 183552.64, "pace": 40.8, "projpct": 153.0, "gap": 71052.63, "ritmo": 3229.67, "projclientes": 2494.0, "part": 15.4}, {"op": "100348", "nome": "Renata Araujo dos Anjos", "venda": 38419.3, "cupons": 812, "ticket": 47.67, "media": 4802.41, "proj": 144072.38, "pace": 32.0, "projpct": 120.1, "gap": 81580.7, "ritmo": 3708.21, "projclientes": 3045.0, "part": 12.1}, {"op": "102020", "nome": "Francisco Higor Barbos", "venda": 36741.22, "cupons": 934, "ticket": 39.55, "media": 4592.65, "proj": 137779.58, "pace": 30.6, "projpct": 114.8, "gap": 83258.78, "ritmo": 3784.49, "projclientes": 3502.0, "part": 11.6}, {"op": "100256", "nome": "Marcia Evelyn de Sousa", "venda": 35899.33, "cupons": 584, "ticket": 61.47, "media": 4487.42, "proj": 134622.49, "pace": 29.9, "projpct": 112.2, "gap": 84100.67, "ritmo": 3822.76, "projclientes": 2190.0, "part": 11.3}, {"op": "100302", "nome": "Ana Clara de Moura", "venda": 30181.55, "cupons": 573, "ticket": 52.67, "media": 3772.69, "proj": 113180.81, "pace": 25.2, "projpct": 94.3, "gap": 89818.45, "ritmo": 4082.66, "projclientes": 2149.0, "part": 9.5}, {"op": "101198", "nome": "Antonia Andrea Bezerra", "venda": 27943.18, "cupons": 486, "ticket": 57.61, "media": 3492.9, "proj": 104786.93, "pace": 23.3, "projpct": 87.3, "gap": 92056.82, "ritmo": 4184.4, "projclientes": 1822.0, "part": 8.8}, {"op": "100314", "nome": "Maria Isabel da Silva Lou", "venda": 23136.21, "cupons": 490, "ticket": 47.31, "media": 2892.03, "proj": 86760.79, "pace": 19.3, "projpct": 72.3, "gap": 96863.79, "ritmo": 4402.9, "projclientes": 1838.0, "part": 7.3}, {"op": "100246", "nome": "Antonia Andressa Almeid", "venda": 10665.01, "cupons": 124, "ticket": 86.01, "media": 1333.13, "proj": 39993.79, "pace": 8.9, "projpct": 33.3, "gap": 109334.99, "ritmo": 4969.77, "projclientes": 465.0, "part": 3.4}, {"op": "200094", "nome": "Bruno Feijo Sousa", "venda": 5339.35, "cupons": 143, "ticket": 37.87, "media": 667.42, "proj": 20022.56, "pace": 4.4, "projpct": 16.7, "gap": 114660.65, "ritmo": 5211.85, "projclientes": 536.0, "part": 1.7}, {"op": "100351", "nome": "Tamires Soares Vieira", "venda": 4492.84, "cupons": 184, "ticket": 24.82, "media": 561.61, "proj": 16848.15, "pace": 3.7, "projpct": 14.0, "gap": 115507.16, "ritmo": 5250.33, "projclientes": 690.0, "part": 1.4}, {"op": "100165", "nome": "Maiara Lima Freire", "venda": 4030.09, "cupons": 223, "ticket": 18.24, "media": 503.76, "proj": 15112.84, "pace": 3.4, "projpct": 12.6, "gap": 115969.91, "ritmo": 5271.36, "projclientes": 836.0, "part": 1.3}, {"op": "200082", "nome": "Beatriz Ruth Santos da S", "venda": 606.33, "cupons": 19, "ticket": 31.91, "media": 75.79, "proj": 2273.74, "pace": 0.5, "projpct": 1.9, "gap": 119393.67, "ritmo": 5426.98, "projclientes": 71.0, "part": 0.2}, {"op": "100354", "nome": "Antonia Alana Gomes de", "venda": 557.51, "cupons": 35, "ticket": 15.93, "media": 69.69, "proj": 2090.66, "pace": 0.5, "projpct": 1.7, "gap": 119442.49, "ritmo": 5429.2, "projclientes": 131.0, "part": 0.2}];
+const META = 120000;
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
+const sel = document.getElementById("sel");
+OPS.forEach((o,i)=>{const op=document.createElement("option");op.value=i;op.textContent=o.op+" — "+o.nome;sel.appendChild(op);});
+let idx=0, sortKey="venda", sortDir=-1;
+
+function status(o){
+  if(o.projpct>=100) return '<span class="badge b-ok">Meta batida ✓</span>';
+  if(o.projpct>=70)  return '<span class="badge b-meio">No caminho</span>';
+  return '<span class="badge b-no">Atenção</span>';
+}
+function kpi(lbl,val,foot,cls=""){return `<div class="card kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div><div class="foot">${foot}</div></div>`;}
+function render(){
+  const o = OPS[idx];
+  sel.value = idx;
+  const gapTxt = o.gap>0 ? brl(o.gap)+" para a meta" : "Meta superada em "+brl(-o.gap);
+  document.getElementById("kpis").innerHTML =
+    kpi("Venda realizada (8d)", brl(o.venda), o.cupons+" cupons · ticket "+brl(o.ticket)) +
+    kpi("Média diária", brl(o.media), "ritmo atual") +
+    kpi("Projeção 30/11", brl(o.proj), o.projclientes+" clientes projetados","pnk") +
+    kpi("Meta do mês", brl(META), "2.031 clientes · R$ 54,00 ticket","cyn") +
+    kpi("% da meta projetada", o.projpct+"%", (o.projpct>=100?"supera a meta em "+(o.projpct-100).toFixed(1)+" p.p.":"faltam "+(100-o.projpct).toFixed(1)+" p.p."), o.projpct>=100?"pos":"neg") +
+    kpi("Pace hoje (8/30)", ((8/30*100).toFixed(1))+"%", "da meta: "+o.pace.toFixed(1)+"% realizada") +
+    kpi("Ritmo p/ bater a meta", o.gap>0?brl(o.ritmo)+"/dia":"—", gapTxt, o.gap>0?"neg":"pos") +
+    kpi("Participação na loja", o.part+"%", "da venda total da Loja 01");
+  const total = Math.max(o.proj, o.venda, META*1.02);
+  const frac = v => Math.min(v/total, 1);
+  document.getElementById("gReal").setAttribute("stroke-dashoffset", 314*(1-frac(o.venda)));
+  document.getElementById("gProj").setAttribute("stroke-dashoffset", 314*(1-frac(Math.min(o.proj,total))));
+  document.getElementById("gv").textContent = o.projpct+"%";
+  document.getElementById("gv").style.color = o.projpct>=100?"var(--ok)":"var(--pink)";
+  document.getElementById("gl").textContent = "projeção vs meta · "+o.nome.split(" ")[0];
+  drawBars(); drawTable();
+}
+function drawBars(){
+  const arr=[...OPS].sort((a,b)=>b.proj-a.proj);
+  const max=Math.max(...arr.map(o=>o.proj), META)*1.06;
+  document.getElementById("bars").innerHTML = arr.map(o=>{
+    const i=OPS.indexOf(o);
+    return `<div class="brow"><div class="bname" title="${o.nome}" onclick="idx=${i};render()">${o.nome}</div>
+      <div class="track"><div class="fill" style="width:${(o.proj/max*100).toFixed(1)}%"></div>
+      <div class="goal" style="left:${(META/max*100).toFixed(1)}%"></div></div>
+      <div class="bval">${brl(o.proj)}</div></div>`;
+  }).join("") + `<div style="font-size:11px;color:var(--cyan);margin-top:4px">| linha vertical = meta R$ 120.000</div>`;
+}
+function drawTable(){
+  const arr=[...OPS].sort((a,b)=>(a[sortKey]>b[sortKey]?1:-1)*sortDir);
+  document.getElementById("tb").innerHTML = arr.map((o,pos)=>{
+    const i=OPS.indexOf(o);
+    return `<tr class="${i===idx?'sel':''}" onclick="idx=${i};render();window.scrollTo({top:0,behavior:'smooth'})">
+      <td>${pos+1}</td><td><b>${o.op}</b> · ${o.nome}</td><td class="r">${brl(o.venda)}</td><td class="r">${brl(o.media)}</td>
+      <td class="r">${o.cupons}</td><td class="r">${brl(o.ticket)}</td><td class="r">${o.part}%</td>
+      <td class="r" style="color:var(--pink)"><b>${brl(o.proj)}</b></td><td class="r"><b>${o.projpct}%</b></td>
+      <td>${status(o)}</td></tr>`;
+  }).join("");
+}
+function sortT(k){ if(sortKey===k) sortDir=-sortDir; else {sortKey=k;sortDir=-1;} drawTable(); }
+function step(d){ idx=(idx+d+OPS.length)%OPS.length; render(); }
+render();
+</script>
+</body>
+</html>

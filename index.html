@@ -37,6 +37,7 @@ button.nav:hover{border-color:var(--pink);color:var(--pink)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 8px;color:var(--mut);font-weight:500;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
 th:hover{color:var(--pink)}
+.r{text-align:right}
 td{padding:10px 8px;border-bottom:1px solid #332a52;font-variant-numeric:tabular-nums;white-space:nowrap}
 tbody tr{cursor:pointer}
 tbody tr:hover{background:#2c2350}
@@ -62,12 +63,17 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
 <header>
   <div>
     <h1>Dashboard <span>por operador</span> — Loja 01</h1>
-    <div class="sub">Período realizado: 01/11 a 08/11/2026 (8 dias) · Meta do mês: R$ 120.000 · 2.031 clientes · Ticket R$ 54,00</div>
+    <div class="sub" id="summary"></div>
   </div>
   <div class="selbox">
-    <button class="nav" onclick="step(-1)">&#10094;</button>
-    <select id="sel" onchange="render()"></select>
-    <button class="nav" onclick="step(1)">&#10095;</button>
+    <label for="periodSel">Período</label>
+    <select id="periodSel" onchange="loadPeriod()">
+      <option value="5">01–05/11</option>
+      <option value="8" selected>01–08/11</option>
+    </select>
+    <button class="nav" onclick="step(-1)" aria-label="Operador anterior">&#10094;</button>
+    <select id="sel" onchange="render()" aria-label="Selecionar operador"></select>
+    <button class="nav" onclick="step(1)" aria-label="Próximo operador">&#10095;</button>
   </div>
 </header>
 
@@ -88,7 +94,7 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
     <div class="gaugeval" id="gv"></div>
     <div class="gaugelbl" id="gl"></div>
     <div class="legend">
-      <span><span class="dot" style="background:linear-gradient(90deg,#8b5cf6,#ff4ecd)"></span>Realizado (8d)</span>
+      <span><span class="dot" style="background:linear-gradient(90deg,#8b5cf6,#ff4ecd)"></span><span id="legendReal">Realizado (8 dias)</span></span>
       <span><span class="dot" style="background:#41e6f2"></span>Projeção até 30/11</span>
     </div>
   </div>
@@ -106,7 +112,7 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
   <table>
     <thead><tr>
       <th>#</th><th>Operador</th><th class="r" onclick="sortT('venda')">Venda líq. ↕</th>
-      <th class="r" onclick="sortT('media')">Média/dia ↕</th><th class="r" onclick="sortT('cupons')">Clientes ↕</th>
+      <th class="r" onclick="sortT('media')">Média/dia ↕</th><th class="r" onclick="sortT('cupons')">Cupons ↕</th>
       <th class="r" onclick="sortT('ticket')">Ticket ↕</th><th class="r" onclick="sortT('part')">Part. loja ↕</th>
       <th class="r" onclick="sortT('proj')">Projeção 30/11 ↕</th><th class="r" onclick="sortT('projpct')">% da meta ↕</th>
       <th>Status</th>
@@ -116,41 +122,117 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
   </div>
 </div>
 
-<div class="sub" style="margin-top:14px">Projeção = média diária (venda líq. ÷ 8 dias) × 30 dias. "Ritmo p/ meta" = valor que falta ÷ 22 dias restantes. Se o operador não trabalhou os 8 dias, a média está subestimada.</div>
+<div class="sub" id="methodNote" style="margin-top:14px"></div>
 </div>
 
 <script>
-const OPS = [{"op": "100935", "nome": "Naiane Costa de Freitas", "venda": 50003.84, "cupons": 813, "ticket": 61.73, "media": 6250.48, "proj": 187514.4, "pace": 41.7, "projpct": 156.3, "gap": 69996.16, "ritmo": 3181.64, "projclientes": 3049.0, "part": 15.8}, {"op": "120003", "nome": "Gilmar Silva Soares", "venda": 48947.37, "cupons": 665, "ticket": 74.39, "media": 6118.42, "proj": 183552.64, "pace": 40.8, "projpct": 153.0, "gap": 71052.63, "ritmo": 3229.67, "projclientes": 2494.0, "part": 15.4}, {"op": "100348", "nome": "Renata Araujo dos Anjos", "venda": 38419.3, "cupons": 812, "ticket": 47.67, "media": 4802.41, "proj": 144072.38, "pace": 32.0, "projpct": 120.1, "gap": 81580.7, "ritmo": 3708.21, "projclientes": 3045.0, "part": 12.1}, {"op": "102020", "nome": "Francisco Higor Barbos", "venda": 36741.22, "cupons": 934, "ticket": 39.55, "media": 4592.65, "proj": 137779.58, "pace": 30.6, "projpct": 114.8, "gap": 83258.78, "ritmo": 3784.49, "projclientes": 3502.0, "part": 11.6}, {"op": "100256", "nome": "Marcia Evelyn de Sousa", "venda": 35899.33, "cupons": 584, "ticket": 61.47, "media": 4487.42, "proj": 134622.49, "pace": 29.9, "projpct": 112.2, "gap": 84100.67, "ritmo": 3822.76, "projclientes": 2190.0, "part": 11.3}, {"op": "100302", "nome": "Ana Clara de Moura", "venda": 30181.55, "cupons": 573, "ticket": 52.67, "media": 3772.69, "proj": 113180.81, "pace": 25.2, "projpct": 94.3, "gap": 89818.45, "ritmo": 4082.66, "projclientes": 2149.0, "part": 9.5}, {"op": "101198", "nome": "Antonia Andrea Bezerra", "venda": 27943.18, "cupons": 486, "ticket": 57.61, "media": 3492.9, "proj": 104786.93, "pace": 23.3, "projpct": 87.3, "gap": 92056.82, "ritmo": 4184.4, "projclientes": 1822.0, "part": 8.8}, {"op": "100314", "nome": "Maria Isabel da Silva Lou", "venda": 23136.21, "cupons": 490, "ticket": 47.31, "media": 2892.03, "proj": 86760.79, "pace": 19.3, "projpct": 72.3, "gap": 96863.79, "ritmo": 4402.9, "projclientes": 1838.0, "part": 7.3}, {"op": "100246", "nome": "Antonia Andressa Almeid", "venda": 10665.01, "cupons": 124, "ticket": 86.01, "media": 1333.13, "proj": 39993.79, "pace": 8.9, "projpct": 33.3, "gap": 109334.99, "ritmo": 4969.77, "projclientes": 465.0, "part": 3.4}, {"op": "200094", "nome": "Bruno Feijo Sousa", "venda": 5339.35, "cupons": 143, "ticket": 37.87, "media": 667.42, "proj": 20022.56, "pace": 4.4, "projpct": 16.7, "gap": 114660.65, "ritmo": 5211.85, "projclientes": 536.0, "part": 1.7}, {"op": "100351", "nome": "Tamires Soares Vieira", "venda": 4492.84, "cupons": 184, "ticket": 24.82, "media": 561.61, "proj": 16848.15, "pace": 3.7, "projpct": 14.0, "gap": 115507.16, "ritmo": 5250.33, "projclientes": 690.0, "part": 1.4}, {"op": "100165", "nome": "Maiara Lima Freire", "venda": 4030.09, "cupons": 223, "ticket": 18.24, "media": 503.76, "proj": 15112.84, "pace": 3.4, "projpct": 12.6, "gap": 115969.91, "ritmo": 5271.36, "projclientes": 836.0, "part": 1.3}, {"op": "200082", "nome": "Beatriz Ruth Santos da S", "venda": 606.33, "cupons": 19, "ticket": 31.91, "media": 75.79, "proj": 2273.74, "pace": 0.5, "projpct": 1.9, "gap": 119393.67, "ritmo": 5426.98, "projclientes": 71.0, "part": 0.2}, {"op": "100354", "nome": "Antonia Alana Gomes de", "venda": 557.51, "cupons": 35, "ticket": 15.93, "media": 69.69, "proj": 2090.66, "pace": 0.5, "projpct": 1.7, "gap": 119442.49, "ritmo": 5429.2, "projclientes": 131.0, "part": 0.2}];
 const META = 120000;
+const PERIOD_DATA = {
+  "5": {
+    label: "01/11 a 05/11/2026",
+    days: 5,
+    items: [
+      {op:"100935",nome:"Naiane Costa de Freitas",venda:27471.66,cupons:467,ticket:58.83},
+      {op:"120003",nome:"Gilmar Silva Soares",venda:22139.55,cupons:358,ticket:62.36},
+      {op:"100348",nome:"Renata Araujo dos Anjos",venda:24514.60,cupons:530,ticket:46.43},
+      {op:"102020",nome:"Francisco Higor Barbosa da Silva",venda:24763.26,cupons:689,ticket:36.20},
+      {op:"100256",nome:"Marcia Evelyn de Sousa Costa",venda:16454.82,cupons:299,ticket:55.03},
+      {op:"100302",nome:"Ana Clara de Moura",venda:16534.23,cupons:342,ticket:48.35},
+      {op:"101198",nome:"Antonia Andrea Bezerra Gomes",venda:16234.33,cupons:299,ticket:54.30},
+      {op:"100314",nome:"Maria Isabel da Silva Lourenço",venda:8952.74,cupons:193,ticket:46.63},
+      {op:"100246",nome:"Antonia Andressa Almeida de Freitas",venda:1163.16,cupons:35,ticket:33.23},
+      {op:"200094",nome:"Bruno Feijo Sousa",venda:2110.29,cupons:50,ticket:43.96},
+      {op:"100351",nome:"Tamires Soares Vieira",venda:2020.01,cupons:84,ticket:24.05},
+      {op:"100165",nome:"Maiara Lima Freire",venda:2365.26,cupons:121,ticket:19.71},
+      {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:606.33,cupons:19,ticket:31.91},
+      {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:298.02,cupons:24,ticket:12.42}
+    ]
+  },
+  "8": {
+    label: "01/11 a 08/11/2026",
+    days: 8,
+    items: [
+      {op:"100935",nome:"Naiane Costa de Freitas",venda:50003.84,cupons:813,ticket:61.73},
+      {op:"120003",nome:"Gilmar Silva Soares",venda:48947.37,cupons:665,ticket:74.39},
+      {op:"100348",nome:"Renata Araujo dos Anjos",venda:38419.30,cupons:812,ticket:47.67},
+      {op:"102020",nome:"Francisco Higor Barbosa da Silva",venda:36741.22,cupons:934,ticket:39.55},
+      {op:"100256",nome:"Marcia Evelyn de Sousa Costa",venda:35899.33,cupons:584,ticket:61.47},
+      {op:"100302",nome:"Ana Clara de Moura",venda:30181.55,cupons:573,ticket:52.67},
+      {op:"101198",nome:"Antonia Andrea Bezerra Gomes",venda:27943.18,cupons:486,ticket:57.61},
+      {op:"100314",nome:"Maria Isabel da Silva Lourenço",venda:23136.21,cupons:490,ticket:47.31},
+      {op:"100246",nome:"Antonia Andressa Almeida de Freitas",venda:10665.01,cupons:124,ticket:86.01},
+      {op:"200094",nome:"Bruno Feijo Sousa",venda:5339.35,cupons:143,ticket:37.87},
+      {op:"100351",nome:"Tamires Soares Vieira",venda:4492.84,cupons:184,ticket:24.82},
+      {op:"100165",nome:"Maiara Lima Freire",venda:4030.09,cupons:223,ticket:18.24},
+      {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:606.33,cupons:19,ticket:31.91},
+      {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:557.51,cupons:35,ticket:15.93}
+    ]
+  }
+};
 const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
+const qty = v => Math.round(v).toLocaleString("pt-BR");
+const periodSel = document.getElementById("periodSel");
 const sel = document.getElementById("sel");
-OPS.forEach((o,i)=>{const op=document.createElement("option");op.value=i;op.textContent=o.op+" — "+o.nome;sel.appendChild(op);});
-let idx=0, sortKey="venda", sortDir=-1;
+let OPS = [], DAYS = 8, periodLabel = "", idx = 0, sortKey = "venda", sortDir = -1;
 
 function status(o){
   if(o.projpct>=100) return '<span class="badge b-ok">Meta batida ✓</span>';
-  if(o.projpct>=70)  return '<span class="badge b-meio">No caminho</span>';
+  if(o.projpct>=70) return '<span class="badge b-meio">No caminho</span>';
   return '<span class="badge b-no">Atenção</span>';
 }
 function kpi(lbl,val,foot,cls=""){return `<div class="card kpi"><div class="lbl">${lbl}</div><div class="val ${cls}">${val}</div><div class="foot">${foot}</div></div>`;}
+function loadPeriod(){
+  const previousOp = OPS[idx]?.op;
+  const selected = PERIOD_DATA[periodSel.value];
+  DAYS = selected.days;
+  periodLabel = selected.label;
+  const totalSales = selected.items.reduce((sum,o)=>sum+o.venda,0);
+  OPS = selected.items.map(o=>{
+    const media = o.venda / DAYS;
+    const proj = media * 30;
+    const gap = META - o.venda;
+    return {
+      ...o,
+      media: Number(media.toFixed(2)),
+      proj: Number(proj.toFixed(2)),
+      pace: Number((o.venda / META * 100).toFixed(1)),
+      projpct: Number((proj / META * 100).toFixed(1)),
+      gap: Number(gap.toFixed(2)),
+      ritmo: Number((Math.max(gap,0) / (30-DAYS)).toFixed(2)),
+      projcupons: Math.round(o.cupons / DAYS * 30),
+      part: Number((o.venda / totalSales * 100).toFixed(1))
+    };
+  });
+  if(!sel.options.length){
+    OPS.forEach((o,i)=>{const op=document.createElement("option");op.value=i;op.textContent=o.op+" — "+o.nome;sel.appendChild(op);});
+  }
+  const preserved = OPS.findIndex(o=>o.op===previousOp);
+  idx = preserved>=0 ? preserved : 0;
+  sel.value = idx;
+  const totalCoupons = OPS.reduce((sum,o)=>sum+o.cupons,0);
+  document.getElementById("summary").textContent = `Período realizado: ${periodLabel} (${DAYS} dias) · Meta individual: ${brl(META)} · Vendas somadas: ${brl(totalSales)} · ${qty(totalCoupons)} cupons`;
+  document.getElementById("legendReal").textContent = `Realizado (${DAYS} dias)`;
+  document.getElementById("methodNote").textContent = `Projeção = média diária (venda líquida ÷ ${DAYS} dias) × 30 dias. Ritmo para bater a meta = valor que falta ÷ ${30-DAYS} dias restantes. A média usa dias corridos do período.`;
+  render();
+}
 function render(){
   const o = OPS[idx];
+  if(!o) return;
   sel.value = idx;
   const gapTxt = o.gap>0 ? brl(o.gap)+" para a meta" : "Meta superada em "+brl(-o.gap);
   document.getElementById("kpis").innerHTML =
-    kpi("Venda realizada (8d)", brl(o.venda), o.cupons+" cupons · ticket "+brl(o.ticket)) +
+    kpi(`Venda realizada (${DAYS}d)`, brl(o.venda), o.cupons+" cupons · ticket "+brl(o.ticket)) +
     kpi("Média diária", brl(o.media), "ritmo atual") +
-    kpi("Projeção 30/11", brl(o.proj), o.projclientes+" clientes projetados","pnk") +
-    kpi("Meta do mês", brl(META), "2.031 clientes · R$ 54,00 ticket","cyn") +
-    kpi("% da meta projetada", o.projpct+"%", (o.projpct>=100?"supera a meta em "+(o.projpct-100).toFixed(1)+" p.p.":"faltam "+(100-o.projpct).toFixed(1)+" p.p."), o.projpct>=100?"pos":"neg") +
-    kpi("Pace hoje (8/30)", ((8/30*100).toFixed(1))+"%", "da meta: "+o.pace.toFixed(1)+"% realizada") +
+    kpi("Projeção 30/11", brl(o.proj), qty(o.projcupons)+" cupons projetados", "pnk") +
+    kpi("Meta do mês", brl(META), "meta individual do operador", "cyn") +
+    kpi("% da meta projetada", o.projpct.toFixed(1)+"%", (o.projpct>=100?"supera a meta em "+(o.projpct-100).toFixed(1)+" p.p.":"faltam "+(100-o.projpct).toFixed(1)+" p.p."), o.projpct>=100?"pos":"neg") +
+    kpi(`Dias decorridos (${DAYS}/30)`, ((DAYS/30*100).toFixed(1))+"%", "da meta: "+o.pace.toFixed(1)+"% realizada") +
     kpi("Ritmo p/ bater a meta", o.gap>0?brl(o.ritmo)+"/dia":"—", gapTxt, o.gap>0?"neg":"pos") +
-    kpi("Participação na loja", o.part+"%", "da venda total da Loja 01");
-  const total = Math.max(o.proj, o.venda, META*1.02);
-  const frac = v => Math.min(v/total, 1);
+    kpi("Participação na loja", o.part.toFixed(1)+"%", "da venda total do período");
+  const frac = v => Math.min(Math.max(v/META,0),1);
   document.getElementById("gReal").setAttribute("stroke-dashoffset", 314*(1-frac(o.venda)));
-  document.getElementById("gProj").setAttribute("stroke-dashoffset", 314*(1-frac(Math.min(o.proj,total))));
-  document.getElementById("gv").textContent = o.projpct+"%";
+  document.getElementById("gProj").setAttribute("stroke-dashoffset", 314*(1-frac(o.proj)));
+  document.getElementById("gv").textContent = o.projpct.toFixed(1)+"%";
   document.getElementById("gv").style.color = o.projpct>=100?"var(--ok)":"var(--pink)";
   document.getElementById("gl").textContent = "projeção vs meta · "+o.nome.split(" ")[0];
   drawBars(); drawTable();
@@ -164,7 +246,7 @@ function drawBars(){
       <div class="track"><div class="fill" style="width:${(o.proj/max*100).toFixed(1)}%"></div>
       <div class="goal" style="left:${(META/max*100).toFixed(1)}%"></div></div>
       <div class="bval">${brl(o.proj)}</div></div>`;
-  }).join("") + `<div style="font-size:11px;color:var(--cyan);margin-top:4px">| linha vertical = meta R$ 120.000</div>`;
+  }).join("") + `<div style="font-size:11px;color:var(--cyan);margin-top:4px">| linha vertical = meta individual ${brl(META)}</div>`;
 }
 function drawTable(){
   const arr=[...OPS].sort((a,b)=>(a[sortKey]>b[sortKey]?1:-1)*sortDir);
@@ -172,14 +254,14 @@ function drawTable(){
     const i=OPS.indexOf(o);
     return `<tr class="${i===idx?'sel':''}" onclick="idx=${i};render();window.scrollTo({top:0,behavior:'smooth'})">
       <td>${pos+1}</td><td><b>${o.op}</b> · ${o.nome}</td><td class="r">${brl(o.venda)}</td><td class="r">${brl(o.media)}</td>
-      <td class="r">${o.cupons}</td><td class="r">${brl(o.ticket)}</td><td class="r">${o.part}%</td>
-      <td class="r" style="color:var(--pink)"><b>${brl(o.proj)}</b></td><td class="r"><b>${o.projpct}%</b></td>
+      <td class="r">${o.cupons}</td><td class="r">${brl(o.ticket)}</td><td class="r">${o.part.toFixed(1)}%</td>
+      <td class="r" style="color:var(--pink)"><b>${brl(o.proj)}</b></td><td class="r"><b>${o.projpct.toFixed(1)}%</b></td>
       <td>${status(o)}</td></tr>`;
   }).join("");
 }
-function sortT(k){ if(sortKey===k) sortDir=-sortDir; else {sortKey=k;sortDir=-1;} drawTable(); }
-function step(d){ idx=(idx+d+OPS.length)%OPS.length; render(); }
-render();
+function sortT(k){if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=-1;}drawTable();}
+function step(d){idx=(idx+d+OPS.length)%OPS.length;render();}
+loadPeriod();
 </script>
 </body>
 </html>

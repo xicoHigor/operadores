@@ -55,6 +55,7 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
 .goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--cyan)}
 .goallbl{position:absolute;top:-18px;transform:translateX(-50%);font-size:10px;color:var(--cyan);white-space:nowrap}
 .bval{text-align:right;color:var(--txt)}
+.warnnote{font-size:12px;color:#ffb450;margin-top:8px}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
 </style>
 </head>
@@ -69,7 +70,8 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
     <label for="periodSel">Período</label>
     <select id="periodSel" onchange="loadPeriod()">
       <option value="5">01–05/11</option>
-      <option value="8" selected>01–08/11</option>
+      <option value="8">01–08/11</option>
+      <option value="11" selected>01–11/11</option>
     </select>
     <button class="nav" onclick="step(-1)" aria-label="Operador anterior">&#10094;</button>
     <select id="sel" onchange="render()" aria-label="Selecionar operador"></select>
@@ -78,6 +80,8 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
 </header>
 
 <section class="grid" id="kpis"></section>
+<section class="grid" id="storeKpis" style="margin-top:16px;display:none"></section>
+<div class="warnnote" id="financialNote" style="display:none"></div>
 
 <div class="row2">
   <div class="card gaugebox">
@@ -167,6 +171,27 @@ const PERIOD_DATA = {
       {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:606.33,cupons:19,ticket:31.91},
       {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:557.51,cupons:35,ticket:15.93}
     ]
+  },
+  "11": {
+    label: "01/11 a 11/11/2026",
+    days: 11,
+    financial: {bruta:429341.22,cancelada:9023.32,desconto:35716.94,liquida:384600.96},
+    items: [
+      {op:"120003",nome:"Gilmar Silva Soares",venda:55993.24,cupons:784,ticket:71.24},
+      {op:"100935",nome:"Naiane Costa de Freitas",venda:53945.08,cupons:918,ticket:59.02},
+      {op:"100348",nome:"Renata Araujo dos Anjos",venda:49423.29,cupons:1089,ticket:45.76},
+      {op:"102020",nome:"Francisco Higor Barbosa da Silva",venda:49007.61,cupons:1235,ticket:39.84},
+      {op:"100256",nome:"Marcia Evelyn de Sousa Costa",venda:42601.58,cupons:705,ticket:60.43},
+      {op:"100302",nome:"Ana Clara de Moura",venda:34883.53,cupons:721,ticket:48.45},
+      {op:"101198",nome:"Antonia Andrea Bezerra Gomes",venda:30753.45,cupons:578,ticket:53.48},
+      {op:"100246",nome:"Antonia Andressa Almeida de Freitas",venda:26312.39,cupons:403,ticket:65.29},
+      {op:"100314",nome:"Maria Isabel da Silva Lourenço",venda:23764.25,cupons:529,ticket:45.01},
+      {op:"200094",nome:"Bruno Feijo Sousa",venda:8647.24,cupons:200,ticket:35.09},
+      {op:"100351",nome:"Tamires Soares Vieira",venda:5324.16,cupons:233,ticket:23.25},
+      {op:"100165",nome:"Maiara Lima Freire",venda:4481.62,cupons:258,ticket:17.85},
+      {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:606.33,cupons:19,ticket:31.91},
+      {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:557.51,cupons:35,ticket:15.93}
+    ]
   }
 };
 const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
@@ -187,6 +212,25 @@ function loadPeriod(){
   DAYS = selected.days;
   periodLabel = selected.label;
   const totalSales = selected.items.reduce((sum,o)=>sum+o.venda,0);
+  const financial = selected.financial;
+  const storeKpis = document.getElementById("storeKpis");
+  const financialNote = document.getElementById("financialNote");
+  if(financial){
+    storeKpis.style.display = "grid";
+    storeKpis.innerHTML =
+      kpi("Venda bruta", brl(financial.bruta), "total informado no relatório") +
+      kpi("Venda cancelada", brl(financial.cancelada), "total informado no relatório", "neg") +
+      kpi("Descontos", brl(financial.desconto), "total informado no relatório", "pnk") +
+      kpi("Venda líquida", brl(financial.liquida), "total informado no relatório", "cyn");
+    const difference = Number((totalSales-financial.liquida).toFixed(2));
+    financialNote.style.display = "block";
+    financialNote.textContent = `Conferência: a soma das vendas por operador é ${brl(totalSales)}; a venda líquida no rodapé do relatório é ${brl(financial.liquida)}. Diferença: ${brl(Math.abs(difference))}${difference>=0?" acima":" abaixo"} no ranking por operador.`;
+  }else{
+    storeKpis.style.display = "none";
+    storeKpis.innerHTML = "";
+    financialNote.style.display = "none";
+    financialNote.textContent = "";
+  }
   OPS = selected.items.map(o=>{
     const media = o.venda / DAYS;
     const proj = media * 30;
@@ -210,7 +254,7 @@ function loadPeriod(){
   idx = preserved>=0 ? preserved : 0;
   sel.value = idx;
   const totalCoupons = OPS.reduce((sum,o)=>sum+o.cupons,0);
-  document.getElementById("summary").textContent = `Período realizado: ${periodLabel} (${DAYS} dias) · Meta individual: ${brl(META)} · Vendas somadas: ${brl(totalSales)} · ${qty(totalCoupons)} cupons`;
+  document.getElementById("summary").textContent = `Período realizado: ${periodLabel} (${DAYS} dias) · Meta individual: ${brl(META)} · ${financial?"Venda líquida no relatório: "+brl(financial.liquida)+" · Soma dos operadores: "+brl(totalSales):"Vendas somadas: "+brl(totalSales)} · ${qty(totalCoupons)} cupons`;
   document.getElementById("legendReal").textContent = `Realizado (${DAYS} dias)`;
   document.getElementById("methodNote").textContent = `Projeção = média diária (venda líquida ÷ ${DAYS} dias) × 30 dias. Ritmo para bater a meta = valor que falta ÷ ${30-DAYS} dias restantes. A média usa dias corridos do período.`;
   render();

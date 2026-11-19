@@ -78,7 +78,8 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
     <select id="periodSel" onchange="loadPeriod()">
       <option value="5">01–05/11</option>
       <option value="8">01–08/11</option>
-      <option value="11" selected>01–11/11</option>
+      <option value="11">01–11/11</option>
+      <option value="19" selected>01–19/11</option>
     </select>
     <button class="nav" onclick="step(-1)" aria-label="Operador anterior">&#10094;</button>
     <select id="sel" onchange="render()" aria-label="Selecionar operador"></select>
@@ -122,7 +123,7 @@ tbody tr.sel{background:linear-gradient(90deg,rgba(255,78,205,.18),transparent);
   <div style="overflow-x:auto">
   <table>
     <thead><tr>
-      <th>#</th><th>Operador</th><th class="r" onclick="sortT('venda')">Venda líq. ↕</th>
+      <th>#</th><th>Operador</th><th class="r" onclick="sortT('venda')">Venda líq. ↕</th><th class="r">Venda cancelada</th>
       <th class="r" onclick="sortT('media')">Média/dia ↕</th><th class="r" onclick="sortT('cupons')">Cupons ↕</th>
       <th class="r" onclick="sortT('ticket')">Ticket ↕</th><th class="r" onclick="sortT('part')">Part. loja ↕</th>
       <th class="r" onclick="sortT('proj')">Projeção 30/11 ↕</th><th class="r" onclick="sortT('projpct')">% da meta ↕</th>
@@ -199,6 +200,26 @@ const PERIOD_DATA = {
       {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:606.33,cupons:19,ticket:31.91},
       {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:557.51,cupons:35,ticket:15.93}
     ]
+  },
+  "19": {
+    label: "01/11 a 19/11/2026",
+    days: 19,
+    items: [
+      {op:"120003",nome:"Gilmar Silva Soares",venda:81653.53,cupons:1289,ticket:63.84,cancelada:2181.46},
+      {op:"100348",nome:"Renata Araujo dos Anjos",venda:81604.60,cupons:1829,ticket:44.86,cancelada:912.22},
+      {op:"102020",nome:"Francisco Higor Barbosa da Silva",venda:78281.27,cupons:1873,ticket:41.97,cancelada:3361.13},
+      {op:"100935",nome:"Naiane Costa de Freitas",venda:73596.06,cupons:1385,ticket:53.37,cancelada:2243.92},
+      {op:"100256",nome:"Marcia Evelyn de Sousa Costa",venda:65898.10,cupons:1160,ticket:56.81,cancelada:889.56},
+      {op:"100302",nome:"Ana Clara de Moura",venda:51275.56,cupons:1106,ticket:46.40,cancelada:818.96},
+      {op:"100246",nome:"Antonia Andressa Almeida de Freitas",venda:36711.63,cupons:638,ticket:57.54,cancelada:281.67},
+      {op:"101198",nome:"Antonia Andrea Bezerra Gomes",venda:30753.45,cupons:578,ticket:53.48,cancelada:281.23},
+      {op:"100314",nome:"Maria Isabel da Silva Lourenço",venda:29099.15,cupons:640,ticket:45.61,cancelada:683.35},
+      {op:"200094",nome:"Bruno Feijo Sousa",venda:12632.82,cupons:354,ticket:35.99,cancelada:554.40},
+      {op:"100351",nome:"Tamires Soares Vieira",venda:9393.29,cupons:383,ticket:24.85,cancelada:264.68},
+      {op:"100165",nome:"Maiara Lima Freire",venda:6696.28,cupons:390,ticket:17.30,cancelada:113.75},
+      {op:"200082",nome:"Beatriz Ruth Santos da Silva",venda:1540.80,cupons:50,ticket:30.82,cancelada:249.85},
+      {op:"100354",nome:"Antonia Alana Gomes de Sousa",venda:557.51,cupons:35,ticket:15.93,cancelada:13.68}
+    ]
   }
 };
 const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:2});
@@ -222,6 +243,8 @@ function loadPeriod(){
   const financial = selected.financial;
   const storeKpis = document.getElementById("storeKpis");
   const financialNote = document.getElementById("financialNote");
+  const hasCancellation = selected.items.some(o=>o.cancelada!=null);
+  const cancellationTotal = selected.items.reduce((sum,o)=>sum+(o.cancelada||0),0);
   if(financial){
     storeKpis.style.display = "grid";
     storeKpis.innerHTML =
@@ -232,6 +255,11 @@ function loadPeriod(){
     const difference = Number((totalSales-financial.liquida).toFixed(2));
     financialNote.style.display = "block";
     financialNote.textContent = `Conferência: a soma das vendas por operador é ${brl(totalSales)}; a venda líquida no rodapé do relatório é ${brl(financial.liquida)}. Diferença: ${brl(Math.abs(difference))}${difference>=0?" acima":" abaixo"} no ranking por operador.`;
+  }else if(hasCancellation){
+    storeKpis.style.display = "grid";
+    storeKpis.innerHTML = kpi("Venda cancelada", brl(cancellationTotal), "soma dos valores informados por operador", "neg");
+    financialNote.style.display = "none";
+    financialNote.textContent = "";
   }else{
     storeKpis.style.display = "none";
     storeKpis.innerHTML = "";
@@ -261,7 +289,7 @@ function loadPeriod(){
   idx = preserved>=0 ? preserved : 0;
   sel.value = idx;
   const totalCoupons = OPS.reduce((sum,o)=>sum+o.cupons,0);
-  document.getElementById("summary").textContent = `Período realizado: ${periodLabel} (${DAYS} dias) · Meta individual: ${brl(META)} · ${financial?"Venda líquida no relatório: "+brl(financial.liquida)+" · Soma dos operadores: "+brl(totalSales):"Vendas somadas: "+brl(totalSales)} · ${qty(totalCoupons)} cupons`;
+  document.getElementById("summary").textContent = `Período realizado: ${periodLabel} (${DAYS} dias) · Meta individual: ${brl(META)} · ${financial?"Venda líquida no relatório: "+brl(financial.liquida)+" · Soma dos operadores: "+brl(totalSales):"Vendas somadas: "+brl(totalSales)}${hasCancellation?" · Vendas canceladas: "+brl(cancellationTotal)+" (soma dos operadores)":""} · ${qty(totalCoupons)} cupons`;
   document.getElementById("legendReal").textContent = `Realizado (${DAYS} dias)`;
   document.getElementById("methodNote").textContent = `Projeção = média diária (venda líquida ÷ ${DAYS} dias) × 30 dias. Ritmo para bater a meta = valor que falta ÷ ${30-DAYS} dias restantes. A média usa dias corridos do período.`;
   render();
@@ -304,7 +332,7 @@ function drawTable(){
   document.getElementById("tb").innerHTML = arr.map((o,pos)=>{
     const i=OPS.indexOf(o);
     return `<tr class="${i===idx?'sel':''}" onclick="idx=${i};render();window.scrollTo({top:0,behavior:'smooth'})">
-      <td>${pos+1}</td><td><b>${o.op}</b> · ${o.nome}</td><td class="r">${brl(o.venda)}</td><td class="r">${brl(o.media)}</td>
+      <td>${pos+1}</td><td><b>${o.op}</b> · ${o.nome}</td><td class="r">${brl(o.venda)}</td><td class="r">${o.cancelada==null?"—":brl(o.cancelada)}</td><td class="r">${brl(o.media)}</td>
       <td class="r">${o.cupons}</td><td class="r">${brl(o.ticket)}</td><td class="r">${o.part.toFixed(1)}%</td>
       <td class="r" style="color:var(--pink)"><b>${brl(o.proj)}</b></td><td class="r"><b>${o.projpct.toFixed(1)}%</b></td>
       <td>${status(o)}</td></tr>`;
